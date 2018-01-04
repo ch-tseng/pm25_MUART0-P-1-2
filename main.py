@@ -7,6 +7,7 @@ from libraryCH.device.lcd import ILI9341
 #Configurable
 debug=0
 pinDevice = 2
+pinPIR = 4
 
 #Fixed
 a_pm1 = [0, 0, 0, 0, 0, 0]
@@ -27,6 +28,7 @@ time.sleep(1)
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(pinDevice ,GPIO.OUT)
 GPIO.output(pinDevice, GPIO.LOW)
+GPIO.setup(pinPIR ,GPIO.IN)
 
 #pm25db = sqlitedb()
 #pm25db.connectDB("pm25db.sqlite")
@@ -36,6 +38,8 @@ GPIO.output(pinDevice, GPIO.LOW)
 air=G3()
 i = 0
 while True:
+    statusPIR = GPIO.input(pinPIR)
+
     if(i % 2 == 0):
         GPIO.output(pinDevice, GPIO.LOW)
         G3device = 0
@@ -47,7 +51,7 @@ while True:
     g3 = (air.read("/dev/ttyS0"))
     time.sleep(1)
     g3 = (air.read("/dev/ttyS0"))
-    print ("device:{} --> pm1:{} pm2.5:{} pm10:{}".format(G3device, g3[3], g3[4], g3[5]))
+    print ("PIR:{} device:{} --> pm1:{} pm2.5:{} pm10:{}".format(statusPIR, G3device, g3[3], g3[4], g3[5]))
 
     if(i % 2 == 0):
         pm10_a = g3[3]
