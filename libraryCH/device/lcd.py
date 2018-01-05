@@ -60,6 +60,32 @@ class ILI9341:
         out = Image.alpha_composite(base, txt)
         self.disp.display(out)
 
+    def drawLineChart(self, data, fontPath, bgpath):
+        img = Image.open(bgpath).convert('RGBA')
+        chart = Image.new('RGBA', img.size, (255,255,255,0))
+        #img = img.rotate(90)
+        draw_img = ImageDraw.Draw(chart)
+        fnt_data = ImageFont.truetype(fontPath, 56)
+        fnt_time = ImageFont.truetype(fontPath, 13)
+ 
+        x = 0
+        r = 5
+        for i in data:
+            x = x + 5
+            y = 270 - int(i) 
+            #draw_img.line((x, y, x,20), width=10, fill=(255,0,0,255))
+            #draw_img.point((x, y), 'red')
+            draw_img.ellipse((x, y, x+2, y+2), fill = 'blue', outline ='blue')
+
+        draw_img.text((0,67), str(data[len(data)-1]), font=fnt_data, fill=(255,0,0,255))
+        timenow = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        draw_img.text((0,40), timenow, font=fnt_time, fill=(0,0,0,128))
+
+        chart = chart.rotate(90)
+        chart = Image.alpha_composite(img, chart)
+        self.disp.display(chart)
+
+
     def printPMdata(self, fontPath, pm10=(20,30), pm25=(24,32), pm100=(30,32), imagePath=""):
         # get an image
         base = Image.open(imagePath).convert('RGBA')
@@ -74,7 +100,7 @@ class ILI9341:
 
         posY = (132, 173, 220)
         posX = (15, 172)
-        posTime = (60,110)
+        posTime = (60,46)
         # draw text, full opacity
         d.text((posX[0],posY[0]), str(pm10[0]), font=fnt_data, fill=(255,255,255,255))
         d.text((posX[0],posY[1]), str(pm25[0]), font=fnt_data, fill=(255,255,255,255))
