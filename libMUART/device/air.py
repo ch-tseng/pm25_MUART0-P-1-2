@@ -19,7 +19,7 @@ class G3():
 
     def conn_serial_port(self, device):
         if self.debug: print (device)
-        self.serial = serial.Serial(device, baudrate=9600)
+        self.serial = serial.Serial(device, baudrate=9600, timeout= 0.5)
         if self.debug: print ("conn ok")
 
     def check_keyword(self):
@@ -48,13 +48,17 @@ class G3():
                         return True
 
     def vertify_data(self, data):
-        if self.debug: print (data)
+        if self.debug: print ("teset:"+data)
         n = 2
         sum = int('42',16)+int('4d',16)
         for i in range(0, len(data)-4, n):
             #print data[i:i+n]
             sum=sum+int(data[i:i+n],16)
-        versum = int(data[40]+data[41]+data[42]+data[43],16)
+        try:
+            versum = int(data[40]+data[41]+data[42]+data[43],16)
+        except:
+            versum = 0
+
         if self.debug: print (sum)
         if self.debug: print (versum)
         if sum == versum:
@@ -65,12 +69,30 @@ class G3():
         #data_hex=data.encode('hex')
         data_hex = data.hex()
         if self.debug: self.vertify_data(data_hex)
-        pm1_cf=int(data_hex[4]+data_hex[5]+data_hex[6]+data_hex[7],16)
-        pm25_cf=int(data_hex[8]+data_hex[9]+data_hex[10]+data_hex[11],16)
-        pm10_cf=int(data_hex[12]+data_hex[13]+data_hex[14]+data_hex[15],16)
-        pm1=int(data_hex[16]+data_hex[17]+data_hex[18]+data_hex[19],16)
-        pm25=int(data_hex[20]+data_hex[21]+data_hex[22]+data_hex[23],16)
-        pm10=int(data_hex[24]+data_hex[25]+data_hex[26]+data_hex[27],16)
+        try: 
+            pm1_cf=int(data_hex[4]+data_hex[5]+data_hex[6]+data_hex[7],16) 
+        except: 
+            pm1_cf=0
+        try: 
+            pm25_cf=int(data_hex[8]+data_hex[9]+data_hex[10]+data_hex[11],16) 
+        except: 
+            pm25_cf=0
+        try: 
+            pm10_cf=int(data_hex[12]+data_hex[13]+data_hex[14]+data_hex[15],16) 
+        except: 
+            pm10_cf=0
+        try: 
+            pm1=int(data_hex[16]+data_hex[17]+data_hex[18]+data_hex[19],16) 
+        except: 
+            pm1=0
+        try: 
+            pm25=int(data_hex[20]+data_hex[21]+data_hex[22]+data_hex[23],16) 
+        except: 
+            pm25=0
+        try: 
+            pm10=int(data_hex[24]+data_hex[25]+data_hex[26]+data_hex[27],16) 
+        except: 
+            pm10=0
         if self.debug: print ("pm1_cf: {}".format(pm1_cf))
         if self.debug: print ("pm25_cf: {}".format(pm25_cf))
         if self.debug: print ("pm10_cf: {}".format(pm10_cf))
@@ -88,4 +110,6 @@ class G3():
             self.data = self.read_data()
             if self.debug: print (self.data)
             return self.data
+        else:
+            return 0
 
