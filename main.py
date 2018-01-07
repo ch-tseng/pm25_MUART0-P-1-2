@@ -49,13 +49,11 @@ GPIO.setup(pinIndoor ,GPIO.IN)
 
 dataPM = pmDataCollect(lengthData=numData, debug=False)
 
-air=G3()
-air.debug = False
-i = 0
-while True:
-    pirStatus = GPIO.input(pinPIR)
+def modeSelect(btn1, btn2):
+    global displayMode, displayScreen
 
-    if(GPIO.input(pinOutdoor)==1 and GPIO.input(pinIndoor)==0 ):
+    voiceFile = ""
+    if(btn1==1 and btn2==0 ):
         print("pinOutdoor clicked")
         if(displayMode != 1):
             displayMode = 1
@@ -63,7 +61,14 @@ while True:
             displayScreen += 1
             if(displayScreen>2): displayScreen=0
 
-    if(GPIO.input(pinIndoor)==1 and GPIO.input(pinOutdoor)==0):
+        if(displayScreen==0):
+            voiceFile = "wav/pm1-outdoor.wav"
+        elif(displayScreen==1):
+            voiceFile = "wav/pm25-outdoor.wav"
+        elif(displayScreen==2):
+            voiceFile = "wav/pm10-outdoor.wav"
+
+    if(btn1==0 and btn2==1):
         print("pinIndoor clicked")
         if(displayMode != 2):
             displayMode = 2
@@ -73,96 +78,92 @@ while True:
             displayScreen += 1
             if(displayScreen>2): displayScreen=0
 
-    if(GPIO.input(pinIndoor)==1 and GPIO.input(pinOutdoor)==1):
+        if(displayScreen==0):
+            voiceFile = "wav/pm1-indoor.wav"
+        elif(displayScreen==1):
+            voiceFile = "wav/pm25-indoor.wav"
+        elif(displayScreen==2):
+            voiceFile = "wav/pm10-indoor.wav"
+
+    if(btn1==1 and btn2==1):
         print("2 buttons clicked")
         displayMode = 0
+        voiceFile = "wav/pmstatus.wav"
 
+    if(displayMode==0):
+        lcd.printPMdata("e1.ttf", pm10=dataPM.getLiveData("pm1"), pm25=dataPM.getLiveData("pm25"), pm100=dataPM.getLiveData("pm10"), imagePath="pics/pmbg.jpg")
+
+    elif(displayMode==1):
+        if(displayScreen==0):
+            lcd.drawLineChart(dataPM.getData("outdoor_pm1"), "e1.ttf", "pics/outdoor_pm1.jpg")
+        elif(displayScreen==1):
+            lcd.drawLineChart(dataPM.getData("outdoor_pm25"), "e1.ttf", "pics/outdoor_pm25.jpg")
+        elif(displayScreen==2):
+            lcd.drawLineChart(dataPM.getData("outdoor_pm10"), "e1.ttf", "pics/outdoor_pm10.jpg")
+
+    elif(displayMode==2):
+        if(displayScreen==0):
+            lcd.drawLineChart(dataPM.getData("indoor_pm1"), "e1.ttf", "pics/indoor_pm1.jpg")
+        elif(displayScreen==1):
+            lcd.drawLineChart(dataPM.getData("indoor_pm25"), "e1.ttf", "pics/indoor_pm25.jpg")
+        elif(displayScreen==2):
+            lcd.drawLineChart(dataPM.getData("indoor_pm10"), "e1.ttf", "pics/indoor_pm10.jpg")
+
+    if(voiceFile != ""): os.system('omxplayer --no-osd ' + voiceFile )
+
+
+def readFromUart(delay=0.5):
+    g3 = (air.read("/dev/ttyS0"))
+    time.sleep(delay)
+    g3 = (air.read("/dev/ttyS0"))
+
+    try:
+        pm1 = g3[3]
+    except:
+        pm1 = 0
+
+    try:
+        pm10 = g3[4]
+    except:
+        pm10 = 0
+
+    try:
+        pm25 = g3[5]
+    except:
+        pm25 = 0
+
+    return (pm1, pm10, pm25)
+
+air=G3()
+air.debug = False
+i = 0
+while True:
+    pirStatus = GPIO.input(pinPIR)
+    btn1 = GPIO.input(pinOutdoor)
+    btn2 = GPIO.input(pinIndoor)
+    modeSelect(btn1, btn2)
 
     if(i % 2 == 0):
         GPIO.output(pinDevice, GPIO.LOW)
         G3device = 0
+        liveData = readFromUart(0.5)
 
+        dataPM.dataInput("indoor_pm1", liveData[0])
+        dataPM.dataInput("indoor_pm25", liveData[2])
+        dataPM.dataInput("indoor_pm10", liveData[1])
     else:
         GPIO.output(pinDevice, GPIO.HIGH)
         G3device = 1
+        liveData = readFromUart(0.5)
 
-    g3 = (air.read("/dev/ttyS0"))
-    time.sleep(0.5)
-    g3 = (air.read("/dev/ttyS0"))
+        dataPM.dataInput("outdoor_pm1", liveData[0])
+        dataPM.dataInput("outdoor_pm25", liveData[2])
+        dataPM.dataInput("outdoor_pm10", liveData[1])
 
-    if(i % 2 == 0):
-        try:
-            pm10_a = g3[3]
-            pm10 = g3[3]
-        except:
-            pm10_a = 0
-            pm10 = 0
+    print ("time:{} PIR:{} BTN1:{} BTN2:{} device:{} --> pm1:{} pm2.5:{} pm10:{}".format(round(time.time()-lastPlayVoice),\
+            pirStatus, btn1, btn2, G3device, liveData[0], liveData[2], liveData[1]))
 
-        try:
-            pm25_a = g3[5]
-            pm25 = g3[5]
-        except:
-            pm25_a = 0
-            pm25 = 0
-
-        try:
-            pm100_a = g3[4]
-            pm100 = g3[4]
-        except:
-            pm100_a = 0
-            pm100 = 0
-
-        dataPM.dataInput("indoor_pm1", pm10_a)
-        dataPM.dataInput("indoor_pm25", pm25_a)
-        dataPM.dataInput("indoor_pm10", pm100_a)
-
-    else:
-        try:
-            pm10_b = g3[3]
-            pm10 = g3[3]
-        except:
-            pm10_b = 0
-            pm10 = 0
-
-        try:
-            pm25_b = g3[5]
-            pm25 = g3[5]
-        except:
-            pm25_b = 0
-            pm25 = 0
-
-        try:
-            pm100_b = g3[4]
-            pm100 = g3[4]
-        except:
-            pm100_b = 0
-            pm100 = 0
-
-        dataPM.dataInput("outdoor_pm1", pm10_b)
-        dataPM.dataInput("outdoor_pm25", pm25_b)
-        dataPM.dataInput("outdoor_pm10", pm100_b)
-
-    print ("time:{} PIR:{} device:{} --> pm1:{} pm2.5:{} pm10:{}".format(round(time.time()-lastPlayVoice), pirStatus, G3device, pm10, pm25, pm100))
-
-    if(i % 2 != 0):
-        if(displayMode==0):
-            lcd.printPMdata("e1.ttf", pm10=(pm10_a,pm10_b), pm25=(pm25_a,pm25_b), pm100=(pm100_a,pm100_b), imagePath="pics/pmbg.jpg")
-
-        elif(displayMode==1):
-            if(displayScreen==0):
-                lcd.drawLineChart(outdoorPM1, "e1.ttf", "pics/outdoor_pm1.jpg")
-            elif(displayScreen==1):
-                lcd.drawLineChart(outdoorPM25, "e1.ttf", "pics/outdoor_pm25.jpg")
-            elif(displayScreen==2):
-                lcd.drawLineChart(outdoorPM10, "e1.ttf", "pics/outdoor_pm10.jpg")
-
-        elif(displayMode==2):
-            if(displayScreen==0):
-                lcd.drawLineChart(indoorPM1, "e1.ttf", "pics/indoor_pm1.jpg")
-            elif(displayScreen==1):
-                lcd.drawLineChart(indoorPM25, "e1.ttf", "pics/indoor_pm25.jpg")
-            elif(displayScreen==2):
-                lcd.drawLineChart(indoorPM10, "e1.ttf", "pics/indoor_pm10.jpg")
+    print(liveData)
 
     if(pirStatus==1): 
         pirAccumulated += 1
@@ -189,7 +190,3 @@ while True:
         lastPlayVoice = time.time()
 
     i += 1
-
-
-
-

@@ -61,3 +61,19 @@ class pmDataCollect():
         elif (pmType == "outdoor_pm10"):
             return self.outdoorPM10
 
+    def getLiveData(self, pmType):
+        if(pmType=="pm1"):
+            if(len(self.outdoorPM1)>0):
+                return (self.outdoorPM1[-1], self.indoorPM1[-1])
+            else:
+                return (0,0)
+        elif(pmType=="pm25"):
+            if(len(self.outdoorPM25)>0):
+                return (self.outdoorPM25[-1], self.indoorPM25[-1])
+            else:
+                return (0,0)
+        elif(pmType=="pm10"):
+            if(len(self.outdoorPM10)>0):
+                return (self.outdoorPM10[-1], self.indoorPM10[-1])
+            else:
+                return (0,0)
