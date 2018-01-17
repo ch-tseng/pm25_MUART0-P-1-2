@@ -6,19 +6,20 @@ from libMUART.device.lcd import ILI9341
 from libMUART.app.MUART0P12 import pmDataCollect
 from subprocess import call
 
+#Set the volume to 100%
 call(["amixer", "sset", "PCM,0", "100%"])
 
-#Configurable
-debug=0
-pinDevice = 2
-pinPIR = 4
-pinOutdoor = 21
-pinIndoor = 20
+#Configurable, you can update the parameter's value below
+debug=0  #change to 1 will display more messasge for debug
+pinDevice = 2  #the GPIO pin which will switch RF Uart device #1 and #2
+pinPIR = 4  #the GPIO pin for PIR module
+pinOutdoor = 21  #the GPIO pin for the button of outdoor's pm25 display
+pinIndoor = 20  #the GPIO pin for the button of indoor's pm25 display
 
-numData = 46  #How many data point will display on the screen?
-pirSensity = 10  #Sensity for the PIR, large number will delay the PIR senssity
+numData = 46  #How many pm25 data will be displayed on the screen?
+pirSensity = 10  #Sensity for the PIR, large number will delay the PIR sensity
 
-#Fixed
+#you don't have to change the values below
 a_pm1 = [0, 0, 0, 0, 0, 0]
 a_pm25 = [0, 0, 0, 0, 0, 0]
 a_pm10 = [0, 0, 0, 0, 0, 0]
@@ -30,12 +31,13 @@ pm25_b = 0
 pm100_b = 0
 setVoice = True
 setScreen = 0
-displayMode = 0  #0(default), 1 (outdoor), 2(indoor)
-displayScreen = 0  #for displayMode=1 or 2, 0: pm1, 1: pm25, 2: pm10
+#displayMode = 0  #0(default), 1 (outdoor), 2(indoor)
+#displayScreen = 0  #for displayMode=1 or 2, 0: pm1, 1: pm25, 2: pm10
 lastPlayVoice = 0
 pirAccumulated = 0
 
 #Setup
+#You have to update the LCD's siae and rotation if the LCD is not 240x320 resolution
 lcd = ILI9341(LCD_size_w=240, LCD_size_h=320, LCD_Rotate=0)
 lcd.displayImg("pics/pmbg.jpg")
 time.sleep(1)
@@ -48,69 +50,8 @@ GPIO.setup(pinOutdoor ,GPIO.IN)
 GPIO.setup(pinIndoor ,GPIO.IN)
 
 dataPM = pmDataCollect(lengthData=numData, debug=False)
-
-def modeSelect(btn1, btn2):
-    global displayMode, displayScreen
-
-    voiceFile = ""
-    if(btn1==1 and btn2==0 ):
-        print("pinOutdoor clicked")
-        if(displayMode != 1):
-            displayMode = 1
-        else:
-            displayScreen += 1
-            if(displayScreen>2): displayScreen=0
-
-        if(displayScreen==0):
-            voiceFile = "wav/pm1-outdoor.wav"
-        elif(displayScreen==1):
-            voiceFile = "wav/pm25-outdoor.wav"
-        elif(displayScreen==2):
-            voiceFile = "wav/pm10-outdoor.wav"
-
-    if(btn1==0 and btn2==1):
-        print("pinIndoor clicked")
-        if(displayMode != 2):
-            displayMode = 2
-            displayScreen += 1
-            if(displayScreen>2): displayScreen=0
-        else:
-            displayScreen += 1
-            if(displayScreen>2): displayScreen=0
-
-        if(displayScreen==0):
-            voiceFile = "wav/pm1-indoor.wav"
-        elif(displayScreen==1):
-            voiceFile = "wav/pm25-indoor.wav"
-        elif(displayScreen==2):
-            voiceFile = "wav/pm10-indoor.wav"
-
-    if(btn1==1 and btn2==1):
-        print("2 buttons clicked")
-        displayMode = 0
-        voiceFile = "wav/pmstatus.wav"
-
-    if(displayMode==0):
-        lcd.printPMdata("e1.ttf", pm10=dataPM.getLiveData("pm1"), pm25=dataPM.getLiveData("pm25"), pm100=dataPM.getLiveData("pm10"), imagePath="pics/pmbg.jpg")
-
-    elif(displayMode==1):
-        if(displayScreen==0):
-            lcd.drawLineChart(dataPM.getData("outdoor_pm1"), "e1.ttf", "pics/outdoor_pm1.jpg")
-        elif(displayScreen==1):
-            lcd.drawLineChart(dataPM.getData("outdoor_pm25"), "e1.ttf", "pics/outdoor_pm25.jpg")
-        elif(displayScreen==2):
-            lcd.drawLineChart(dataPM.getData("outdoor_pm10"), "e1.ttf", "pics/outdoor_pm10.jpg")
-
-    elif(displayMode==2):
-        if(displayScreen==0):
-            lcd.drawLineChart(dataPM.getData("indoor_pm1"), "e1.ttf", "pics/indoor_pm1.jpg")
-        elif(displayScreen==1):
-            lcd.drawLineChart(dataPM.getData("indoor_pm25"), "e1.ttf", "pics/indoor_pm25.jpg")
-        elif(displayScreen==2):
-            lcd.drawLineChart(dataPM.getData("indoor_pm10"), "e1.ttf", "pics/indoor_pm10.jpg")
-
-    if(voiceFile != ""): os.system('omxplayer --no-osd ' + voiceFile )
-
+#dataPM.displayMode = 0  #0(default), 1 (outdoor), 2(indoor)
+#dataPM.displayScreen = 9  #for displayMode=1 or 2, 0: pm1, 1: pm25, 2: pm10
 
 def readFromUart(delay=0.5):
     g3 = (air.read("/dev/ttyS0"))
@@ -141,7 +82,32 @@ while True:
     pirStatus = GPIO.input(pinPIR)
     btn1 = GPIO.input(pinOutdoor)
     btn2 = GPIO.input(pinIndoor)
-    modeSelect(btn1, btn2)
+
+    dataPM.btnSelect(btn1, btn2)
+    if(dataPM.displayMode==0):
+        lcd.printPMdata("e1.ttf", pm10=dataPM.getLiveData("pm1"), pm25=dataPM.getLiveData("pm25"), \
+                pm100=dataPM.getLiveData("pm10"), imagePath="pics/pmbg.jpg")
+
+    elif(dataPM.displayMode==1):
+        if(dataPM.displayScreen==0):
+            lcd.drawLineChart(dataPM.getData("outdoor_pm1"), "e1.ttf", "pics/outdoor_pm1.jpg")
+        elif(dataPM.displayScreen==1):
+            lcd.drawLineChart(dataPM.getData("outdoor_pm25"), "e1.ttf", "pics/outdoor_pm25.jpg")
+        elif(dataPM.displayScreen==2):
+            lcd.drawLineChart(dataPM.getData("outdoor_pm10"), "e1.ttf", "pics/outdoor_pm10.jpg")
+
+    elif(dataPM.displayMode==2):
+        if(dataPM.displayScreen==0):
+            lcd.drawLineChart(dataPM.getData("indoor_pm1"), "e1.ttf", "pics/indoor_pm1.jpg")
+        elif(dataPM.displayScreen==1):
+            lcd.drawLineChart(dataPM.getData("indoor_pm25"), "e1.ttf", "pics/indoor_pm25.jpg")
+        elif(dataPM.displayScreen==2):
+            lcd.drawLineChart(dataPM.getData("indoor_pm10"), "e1.ttf", "pics/indoor_pm10.jpg")
+
+    if(dataPM.voiceFile != ""): 
+        os.system('omxplayer --no-osd ' + dataPM.voiceFile )
+        dataPM.voiceFile  = ""
+
 
     if(i % 2 == 0):
         GPIO.output(pinDevice, GPIO.LOW)

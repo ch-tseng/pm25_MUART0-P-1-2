@@ -10,6 +10,9 @@ class pmDataCollect():
         self.outdoorPM25 = []
         self.outdoorPM10 = []
         self.numData = lengthData
+        self.voiceFile = ""
+        self.displayMode = 0  #0(default), 1 (outdoor), 2(indoor)
+        self.displayScreen = 0  #for displayMode=1 or 2, 0: pm1, 1: pm25, 2: pm10
 
     def dataInput(self, pmType, dataInsert):
 
@@ -77,3 +80,43 @@ class pmDataCollect():
                 return (self.outdoorPM10[-1], self.indoorPM10[-1])
             else:
                 return (0,0)
+
+    def btnSelect(self, btn1, btn2):
+        self.voiceFile = ""
+        if(btn1==1 and btn2==0 ):
+            print("pinOutdoor clicked")
+            if(self.displayMode != 1):
+                self.displayMode = 1
+            else:
+                self.displayScreen += 1
+                if(self.displayScreen>2): self.displayScreen=0
+
+            if(self.displayScreen==0):
+                self.voiceFile = "wav/pm1-outdoor.wav"
+            elif(self.displayScreen==1):
+                self.voiceFile = "wav/pm25-outdoor.wav"
+            elif(self.displayScreen==2):
+                self.voiceFile = "wav/pm10-outdoor.wav"
+
+        if(btn1==0 and btn2==1):
+            print("pinIndoor clicked")
+            if(self.displayMode != 2):
+                self.displayMode = 2
+                self.displayScreen += 1
+                if(self.displayScreen>2): self.displayScreen=0
+            else:
+                self.displayScreen += 1
+                if(self.displayScreen>2): self.displayScreen=0
+
+            if(self.displayScreen==0):
+                self.voiceFile = "wav/pm1-indoor.wav"
+            elif(self.displayScreen==1):
+                self.voiceFile = "wav/pm25-indoor.wav"
+            elif(self.displayScreen==2):
+                self.voiceFile = "wav/pm10-indoor.wav"
+
+        if(btn1==1 and btn2==1):
+            print("2 buttons clicked")
+            self.displayMode = 0
+            self.voiceFile = "wav/pmstatus.wav"
+
