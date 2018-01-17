@@ -13,8 +13,8 @@ call(["amixer", "sset", "PCM,0", "100%"])
 debug=0  #change to 1 will display more messasge for debug
 pinDevice = 2  #the GPIO pin which will switch RF Uart device #1 and #2
 pinPIR = 4  #the GPIO pin for PIR module
-pinOutdoor = 21  #the GPIO pin for the button of outdoor's pm25 display
-pinIndoor = 20  #the GPIO pin for the button of indoor's pm25 display
+pinOutdoor = 6  #the GPIO pin for the button of outdoor's pm25 display
+pinIndoor = 5  #the GPIO pin for the button of indoor's pm25 display
 
 numData = 46  #How many pm25 data will be displayed on the screen?
 pirSensity = 10  #Sensity for the PIR, large number will delay the PIR sensity
@@ -35,6 +35,8 @@ setScreen = 0
 #displayScreen = 0  #for displayMode=1 or 2, 0: pm1, 1: pm25, 2: pm10
 lastPlayVoice = 0
 pirAccumulated = 0
+last_pinOutdoor = 1
+last_pinIndoor = 1
 
 #Setup
 #You have to update the LCD's siae and rotation if the LCD is not 240x320 resolution
@@ -46,8 +48,10 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(pinDevice ,GPIO.OUT)
 GPIO.output(pinDevice, GPIO.LOW)
 GPIO.setup(pinPIR ,GPIO.IN)
-GPIO.setup(pinOutdoor ,GPIO.IN)
-GPIO.setup(pinIndoor ,GPIO.IN)
+#GPIO.setup(pinOutdoor ,GPIO.IN)
+#GPIO.setup(pinIndoor ,GPIO.IN)
+GPIO.setup(pinOutdoor, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(pinIndoor, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 dataPM = pmDataCollect(lengthData=numData, debug=False)
 #dataPM.displayMode = 0  #0(default), 1 (outdoor), 2(indoor)
@@ -82,8 +86,21 @@ while True:
     pirStatus = GPIO.input(pinPIR)
     btn1 = GPIO.input(pinOutdoor)
     btn2 = GPIO.input(pinIndoor)
+    print("BTN1:{}  BTN2:{}".format(btn1,btn2))
+    if((btn1!=last_pinOutdoor and btn1==0) and (btn2!=last_pinIndoor and btn2==0)):
+        print("BTN1,2 clicked")
+        dataPM.btnSelect(1, 1)
+    else:
+        if(btn1!=last_pinOutdoor and btn1==0):
+            print("BTN1 clicked")
+            dataPM.btnSelect(1, 0)
+        if(btn2!=last_pinIndoor and btn2==0):
+            print("BTN2 clicked")
+            dataPM.btnSelect(0, 1)
 
-    dataPM.btnSelect(btn1, btn2)
+    last_pinIndoor = btn2
+    last_pinOutdoor = btn1
+
     if(dataPM.displayMode==0):
         lcd.printPMdata("e1.ttf", pm10=dataPM.getLiveData("pm1"), pm25=dataPM.getLiveData("pm25"), \
                 pm100=dataPM.getLiveData("pm10"), imagePath="pics/pmbg.jpg")
@@ -100,6 +117,7 @@ while True:
         if(dataPM.displayScreen==0):
             lcd.drawLineChart(dataPM.getData("indoor_pm1"), "e1.ttf", "pics/indoor_pm1.jpg")
         elif(dataPM.displayScreen==1):
+            print(dataPM.getData("indoor_pm25"))
             lcd.drawLineChart(dataPM.getData("indoor_pm25"), "e1.ttf", "pics/indoor_pm25.jpg")
         elif(dataPM.displayScreen==2):
             lcd.drawLineChart(dataPM.getData("indoor_pm10"), "e1.ttf", "pics/indoor_pm10.jpg")
