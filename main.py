@@ -13,8 +13,8 @@ call(["amixer", "sset", "PCM,0", "100%"])
 debug=0  #change to 1 will display more messasge for debug
 pinDevice = 2  #the GPIO pin which will switch RF Uart device #1 and #2
 pinPIR = 4  #the GPIO pin for PIR module
-pinOutdoor = 6  #the GPIO pin for the button of outdoor's pm25 display
-pinIndoor = 5  #the GPIO pin for the button of indoor's pm25 display
+pinOutdoor = 21  #the GPIO pin for the button of outdoor's pm25 display
+pinIndoor = 20  #the GPIO pin for the button of indoor's pm25 display
 
 numData = 46  #How many pm25 data will be displayed on the screen?
 pirSensity = 10  #Sensity for the PIR, large number will delay the PIR sensity
